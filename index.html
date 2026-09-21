@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kuis Interaktif Informatika Kelas 8</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #e2e8f0; /* Background desktop */
+            /* Hindari scroll body pada mobile */
+            overscroll-behavior-y: none; 
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .hidden-screen {
+            display: none !important;
+        }
+
+        /* Menyembunyikan scrollbar untuk berjaga-jaga jika layar terlalu kecil */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center h-[100dvh] w-screen m-0 p-0 sm:p-4 overflow-hidden">
+
+    <!-- Main Container: Dibuat agar persis menyerupai ukuran layar HP, no scroll -->
+    <div id="app" class="bg-white w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-w-[400px] sm:rounded-[2rem] sm:shadow-2xl overflow-hidden flex flex-col relative">
+        
+        <!-- Header (Compact) -->
+        <div class="bg-gradient-to-r from-indigo-600 to-blue-500 p-3 sm:p-4 text-white flex-shrink-0 flex justify-between items-center z-10 shadow-sm">
+            <div>
+                <h1 class="text-sm sm:text-base font-bold leading-tight">Evaluasi Informatika</h1>
+                <p class="text-indigo-100 text-[10px] sm:text-xs">Kelas 8</p>
+            </div>
+            <div class="bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/20 text-[10px] font-medium">
+                <span id="header-status">Mulai</span>
+            </div>
+        </div>
+
+        <!-- Content Area: Flex-1 agar mengisi sisa tinggi layar -->
+        <div id="content-area" class="flex-1 flex flex-col p-4 overflow-hidden relative w-full">
+            
+            <!-- Layar Mulai (Start Screen) -->
+            <div id="start-screen" class="flex-1 flex flex-col justify-center text-center fade-in">
+                <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-500">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Uji Pemahamanmu!</h2>
+                <p class="text-gray-500 mb-6 text-xs sm:text-sm leading-relaxed px-2">
+                    Evaluasi ini dirancang untuk menguji materi Informatika yang telah kamu pelajari. Terdiri dari <strong>35 Soal Pilihan Ganda</strong>.
+                </p>
+                
+                <div class="bg-blue-50 border border-blue-100 text-blue-800 p-3 rounded-xl text-left mb-auto text-[11px] mx-2">
+                    <span class="font-bold block mb-1">Penting:</span>
+                    <ul class="list-disc pl-4 space-y-0.5">
+                        <li>Tidak perlu scroll, layar otomatis pas di HP.</li>
+                        <li>Skor akhir otomatis dihitung di akhir.</li>
+                    </ul>
+                </div>
+
+                <div class="mt-6 mb-4">
+                    <button onclick="startQuiz()" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold py-3 rounded-xl shadow-lg active:scale-95 transition-transform text-sm">
+                        Mulai Kerjakan
+                    </button>
+                </div>
+            </div>
+
+            <!-- Layar Kuis Pilihan Ganda (MCQ Screen) -->
+            <div id="mcq-screen" class="hidden-screen flex-1 flex flex-col h-full w-full fade-in">
+                
+                <!-- Progress & Stats Info (Sangat Padat) -->
+                <div class="flex justify-between items-end mb-1.5 flex-shrink-0">
+                    <h3 class="text-xs font-bold text-gray-500" id="mcq-counter">Soal 1 / 35</h3>
+                    <div class="text-[11px] font-semibold text-gray-500">
+                        Benar: <span id="mcq-correct-display" class="text-green-500 font-bold text-sm">0</span>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar MCQ -->
+                <div class="w-full bg-gray-100 rounded-full h-1.5 mb-4 flex-shrink-0">
+                    <div id="mcq-progress-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <!-- AREA SCROLLABLE: Mencegah tombol next tenggelam jika teks soal sangat panjang (seperti No 35) -->
+                <div id="mcq-scroll-area" class="flex-1 overflow-y-auto no-scrollbar flex flex-col pb-2">
+                    <!-- Teks Pertanyaan (Responsive text & mendeteksi Enter/Baris Baru) -->
+                    <div class="mb-4 flex-shrink-0">
+                        <h2 id="mcq-question-text" class="text-sm sm:text-base font-semibold text-gray-800 leading-snug whitespace-pre-line">
+                            Pertanyaan akan muncul di sini.
+                        </h2>
+                    </div>
+
+                    <!-- Pilihan Jawaban (Tightly packed) -->
+                    <div id="mcq-options-container" class="space-y-2 mb-3 flex-shrink-0 w-full">
+                        <!-- Tombol opsi di-generate lewat JavaScript -->
+                    </div>
+
+                    <!-- Pembahasan MCQ (Muncul saat dijawab, dipadatkan) -->
+                    <div id="mcq-explanation-box" class="hidden-screen bg-indigo-50 border border-indigo-100 rounded-lg p-3 mb-2 flex-shrink-0">
+                        <h3 class="font-bold text-indigo-800 text-[11px] mb-1 uppercase tracking-wider">Pembahasan</h3>
+                        <p id="mcq-explanation-text" class="text-gray-700 text-xs leading-snug"></p>
+                    </div>
+
+                    <!-- Spacer untuk menekan tombol ke paling bawah jika konten pendek -->
+                    <div class="flex-grow"></div>
+                </div>
+
+                <!-- Tombol Selanjutnya MCQ (Fixed/Terkunci di paling bawah, pasti selalu terlihat) -->
+                <div class="flex-shrink-0 pt-2 pb-1 mt-auto bg-white">
+                    <button id="mcq-next-btn" onclick="nextMCQ()" class="hidden-screen w-full bg-gray-900 active:bg-black text-white font-medium py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-sm">
+                        <span>Selanjutnya</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Layar Hasil (Result Screen) -->
+            <div id="result-screen" class="hidden-screen flex-1 flex flex-col items-center justify-center text-center fade-in">
+                
+                <h2 class="text-2xl font-bold text-gray-800 mb-1">Evaluasi Selesai!</h2>
+                <p class="text-gray-500 mb-6 text-xs">Skor akhir dari 35 soal objektif.</p>
+                
+                <!-- Score Circle -->
+                <div class="relative w-36 h-36 mx-auto mb-6">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#f1f5f9" stroke-width="3"></path>
+                        <path id="score-circle-path" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" class="transition-all duration-1000 ease-out"></path>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="final-score" class="text-4xl font-black text-gray-800 tracking-tighter">0</span>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl p-3 w-full flex justify-around mb-6 border border-gray-100">
+                    <div class="text-center">
+                        <p class="text-[10px] text-green-500 font-bold uppercase mb-0.5">Benar</p>
+                        <p id="final-correct-count" class="text-lg font-bold text-gray-800">0</p>
+                    </div>
+                    <div class="w-px bg-gray-200"></div>
+                    <div class="text-center">
+                        <p class="text-[10px] text-red-500 font-bold uppercase mb-0.5">Salah</p>
+                        <p id="final-wrong-count" class="text-lg font-bold text-gray-800">0</p>
+                    </div>
+                </div>
+
+                <div id="result-message-container" class="w-full p-3 rounded-xl mb-auto border">
+                    <p id="result-message" class="text-sm font-medium"></p>
+                </div>
+
+                <div class="w-full mt-4 mb-2">
+                    <button onclick="restartQuiz()" class="w-full bg-white border border-gray-300 active:bg-gray-50 text-gray-700 font-semibold py-3 rounded-xl shadow-sm text-sm flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Ulangi Kuis
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data 35 Soal Pilihan Ganda 
+        const mcqQuestions = [
+            { q: "1. Rina selalu menyelesaikan tugas tepat waktu. Ketika menemukan kesulitan, ia berusaha mencari solusi sendiri sebelum meminta bantuan guru. Sikap Rina menunjukkan profil lulusan berupa ....", o: ["kolaboratif", "mandiri", "kreatif", "berwawasan global"], a: 1, exp: "Mandiri berarti berusaha menyelesaikan tugas dan masalah dengan kemampuan sendiri serta bertanggung jawab." },
+            { q: "2. Contoh perilaku yang menunjukkan sikap kreatif dan inovatif dalam pembelajaran Informatika adalah ....", o: ["menyalin tugas teman tanpa perubahan", "menggunakan komputer hanya untuk bermain", "membuat rancangan aplikasi sederhana untuk menyelesaikan masalah", "menunggu teman menyelesaikan semua tugas"], a: 2, exp: "Kreatif dan inovatif ditunjukkan dengan menghasilkan gagasan untuk memecahkan masalah." },
+            { q: "3. Dalam mengerjakan proyek kelompok, Andi bertugas mencari informasi, Budi membuat desain, dan Siti menyusun laporan. Mereka saling membantu untuk menyelesaikan proyek. Sikap tersebut menunjukkan ....", o: ["persaingan", "kemandirian", "kolaborasi", "ketergantungan"], a: 2, exp: "Kolaborasi adalah kerja sama anggota kelompok untuk mencapai tujuan bersama." },
+            { q: "4. Dina mengerjakan proyek secara mandiri dengan mencari referensi dari berbagai sumber digital dari Indonesia dan negara lain. Ia kemudian menggunakan informasi tersebut secara bertanggung jawab. Perilaku Dina menunjukkan ....", o: ["mandiri dan berwawasan global", "hanya bekerja secara berkelompok", "bergantung pada orang lain", "menghindari teknologi"], a: 0, exp: "Mandiri ditunjukkan belajar sendiri; wawasan global ditunjukkan memanfaatkan informasi dari berbagai negara secara bertanggung jawab." },
+            { q: "5. Budi menerima pesan yang mengatasnamakan sebuah layanan digital. Pesan tersebut meminta Budi mengklik tautan dan memasukkan username serta password. Risiko utama tindakan tersebut adalah ....", o: ["perangkat menjadi lebih cepat", "data pribadi atau akun dapat dicuri", "kapasitas penyimpanan bertambah", "koneksi internet menjadi stabil"], a: 1, exp: "Pesan palsu yang meminta data rahasia dapat merupakan phishing dan berisiko pencurian akun." },
+            { q: "6. Perubahan cara berbelanja pada era ekonomi digital ditunjukkan oleh ....", o: ["pembeli harus selalu datang ke toko", "transaksi hanya dapat dilakukan menggunakan uang tunai", "masyarakat dapat membeli barang melalui marketplace secara online", "penjual tidak dapat mempromosikan barang melalui internet"], a: 2, exp: "Ekonomi digital memungkinkan jual beli melalui platform online." },
+            { q: "7. Seorang siswa melihat unggahan temannya di media sosial yang berbeda pendapat dengannya. Tindakan yang paling sesuai dengan etika digital adalah ....", o: ["menghina pendapat tersebut", "menyebarkan unggahan untuk mempermalukan temannya", "memberikan tanggapan dengan bahasa yang sopan", "mengajak orang lain menyerang akun tersebut"], a: 2, exp: "Etika digital mengharuskan pengguna berkomunikasi secara sopan dan menghargai orang lain." },
+            { q: "8. Sebuah lahan pertanian menggunakan sensor kelembapan tanah yang terhubung ke internet. Ketika tanah terlalu kering, sistem secara otomatis menyalakan pompa air. Cara kerja tersebut merupakan penerapan ....", o: ["IoT", "pengolah kata", "antivirus", "mesin pencari"], a: 0, exp: "IoT menghubungkan perangkat/sensor melalui jaringan sehingga data dapat digunakan untuk tindakan otomatis." },
+            { q: "9. Penggunaan pembelajaran online secara berlebihan tanpa pengaturan waktu dapat menyebabkan ....", o: ["konsentrasi dan interaksi sosial terganggu", "kemampuan bersosialisasi selalu meningkat", "tubuh selalu menjadi lebih sehat", "siswa tidak membutuhkan istirahat"], a: 0, exp: "Penggunaan pembelajaran online berlebihan dapat mengganggu konsentrasi dan interaksi sosial." },
+            { q: "10. Sebuah perusahaan memiliki jutaan data transaksi pelanggan. Perusahaan tersebut menggunakan Big Data untuk mengetahui pola pembelian pelanggan. Manfaat Big Data dalam kasus tersebut adalah ....", o: ["menghapus seluruh data pelanggan", "membantu menganalisis pola dan mengambil keputusan", "memperlambat pengolahan data", "mengganti semua komputer dengan telepon"], a: 1, exp: "Big Data membantu mengolah data dalam jumlah besar untuk menemukan pola dan mendukung keputusan." },
+            { q: "11. Password yang terdiri atas kombinasi huruf besar, huruf kecil, angka, dan simbol bertujuan untuk ....", o: ["membuat password mudah ditebak", "meningkatkan keamanan akun", "mempercepat koneksi internet", "mengurangi kapasitas penyimpanan"], a: 1, exp: "Password dengan kombinasi karakter lebih sulit ditebak." },
+            { q: "12. Seorang siswa selalu meminta AI mengerjakan seluruh tugasnya tanpa mencoba memahami materi. Jika kebiasaan tersebut terus dilakukan, risiko yang mungkin terjadi adalah ....", o: ["kemampuan berpikir dan belajar mandiri dapat berkurang", "siswa selalu menjadi lebih kreatif", "siswa tidak perlu belajar lagi", "semua jawaban AI pasti benar"], a: 0, exp: "Ketergantungan pada AI tanpa memahami materi mengurangi latihan berpikir dan belajar mandiri." },
+            { q: "13. Keunggulan menggunakan platform digital untuk mengerjakan dokumen secara bersama-sama adalah ....", o: ["hanya satu orang yang dapat bekerja", "pekerjaan tidak dapat dibagikan", "beberapa orang dapat bekerja pada dokumen secara bersama-sama", "dokumen tidak dapat diperbarui"], a: 2, exp: "Platform kolaborasi memungkinkan beberapa orang mengerjakan dokumen bersama." },
+            { q: "14. Sebuah koneksi internet memiliki kecepatan 40 Mbps dan digunakan secara merata oleh 4 perangkat. Jika pembagian dianggap sama rata, kecepatan yang diperoleh setiap perangkat adalah ....", o: ["5 Mbps", "10 Mbps", "20 Mbps", "40 Mbps"], a: 1, exp: "40 Mbps ÷ 4 perangkat = 10 Mbps per perangkat." },
+            { q: "15. Teknologi yang memungkinkan seseorang menyimpan file di internet sehingga file dapat diakses dari berbagai perangkat disebut ....", o: ["cloud storage", "keyboard", "printer", "scanner"], a: 0, exp: "Cloud storage menyimpan file pada server yang dapat diakses melalui internet." },
+            { q: "16. Andi menemukan konten media sosial yang menghina suku tertentu. Tindakan yang paling tepat adalah ....", o: ["ikut menyebarkan konten tersebut", "memberikan komentar penghinaan", "tidak menyebarkannya dan menghargai keberagaman", "membuat konten serupa untuk membalas"], a: 2, exp: "Tidak menyebarkan konten penghinaan dan menghargai keberagaman merupakan perilaku digital yang tepat." },
+            { q: "17. Contoh penerapan teknologi informatika dalam bidang kesehatan adalah ....", o: ["rekam medis digital", "papan tulis kapur", "buku tulis", "penggaris"], a: 0, exp: "Rekam medis digital merupakan penerapan informatika di bidang kesehatan." },
+            { q: "18. Sebuah file berukuran 600 MB dipindahkan dengan kecepatan 20 MB/detik. Waktu yang diperlukan adalah ....", o: ["20 detik", "30 detik", "40 detik", "60 detik"], a: 1, exp: "600 MB ÷ 20 MB/detik = 30 detik." },
+            { q: "19. Seorang siswa baru mulai belajar pemrograman. Langkah awal yang paling tepat adalah ....", o: ["langsung membuat program yang sangat kompleks", "menghafalkan seluruh kode bahasa pemrograman", "memahami logika, algoritma, dan dasar-dasar pemrograman", "mencari jawaban dari internet tanpa memahami"], a: 2, exp: "Dasar pemrograman perlu diawali dengan logika dan algoritma agar paham cara menyelesaikan masalah." },
+            { q: "20. Pernyataan yang tepat mengenai perangkat input dan output perangkat keras adalah ....", o: ["monitor merupakan input dan keyboard merupakan output", "keyboard merupakan input dan monitor merupakan output", "keyboard merupakan output dan monitor merupakan input", "keduanya merupakan perangkat pemroses"], a: 1, exp: "Keyboard adalah perangkat input; monitor adalah perangkat output." },
+            { q: "21. Kemampuan memodifikasi atau mengembangkan gagasan menjadi sesuatu yang baru dan bermanfaat disebut ....", o: ["kreativitas", "keamanan", "konektivitas", "komunikasi"], a: 0, exp: "Kemampuan menghasilkan atau mengembangkan gagasan baru dan bermanfaat disebut kreativitas." },
+            { q: "22. Dalam kerja kelompok secara online, sikap yang sebaiknya dihindari adalah ....", o: ["berbagi tugas", "mendengarkan pendapat anggota", "menghargai hasil pekerjaan teman", "mendominasi kelompok dan tidak mau bekerja sama"], a: 3, exp: "Mendominasi kelompok dan tidak mau bekerja sama bertentangan dengan prinsip kolaborasi." },
+            { q: "23. Sebuah pabrik modern menggunakan sistem yang terhubung internet untuk mengendalikan proses produksi. Jika koneksi internet terganggu, dampak yang mungkin terjadi adalah ....", o: ["proses digital dan sistem yang bergantung pada jaringan dapat terganggu", "produksi pasti menjadi lebih cepat", "semua mesin otomatis bekerja lebih baik", "data menjadi lebih aman secara otomatis"], a: 0, exp: "Sistem yang bergantung pada jaringan dapat terganggu ketika koneksi internet bermasalah." },
+            { q: "24. Ibu ingin membersihkan rumah. Ia membagi pekerjaan menjadi menyapu, mengepel, membersihkan meja, dan merapikan kamar. Cara tersebut merupakan contoh ....", o: ["dekomposisi", "enkripsi", "debugging", "kompresi"], a: 0, exp: "Membagi masalah besar menjadi bagian-bagian kecil merupakan dekomposisi." },
+            { q: "25. Pasangan yang tepat mengenai teknologi pada Revolusi Industri 4.0 adalah ....", o: ["mesin uap dan tenaga air", "produksi massal dan listrik", "komputer dan otomatisasi", "IoT, AI, Big Data, dan sistem siber-fisik"], a: 3, exp: "IoT, AI, Big Data, dan sistem siber-fisik merupakan teknologi penting Industri 4.0." },
+            { q: "26. Sistem keamanan yang menggunakan sidik jari untuk mengenali identitas pengguna disebut ....", o: ["biometrik", "firewall", "cloud computing", "spreadsheet"], a: 0, exp: "Sidik jari merupakan contoh autentikasi biometrik." },
+            { q: "27. Manfaat utama infografis dalam penyajian data adalah ....", o: ["membuat informasi semakin sulit dipahami", "menyajikan informasi secara visual agar lebih mudah dipahami", "menghilangkan semua data", "mengganti semua bentuk komunikasi"], a: 1, exp: "Infografis menyajikan data secara visual agar lebih mudah dipahami." },
+            { q: "28. Guru memberikan data tentang jumlah pengguna internet dalam bentuk tabel yang panjang. Siswa kemudian membuat grafik dan ikon untuk menyajikannya secara visual. Manfaat infografis pada situasi tersebut adalah ....", o: ["membuat data tidak dapat dibaca", "membantu pembaca memahami data dengan lebih cepat", "menghilangkan informasi penting", "membuat data menjadi tidak teratur"], a: 1, exp: "Grafik dan ikon membantu pembaca memahami data yang kompleks dengan lebih cepat." },
+            { q: "29. Sekolah ingin menyampaikan informasi tentang tata tertib penggunaan internet kepada seluruh siswa. Infografis dianggap sesuai karena ....", o: ["informasi dapat disampaikan secara ringkas, menarik, dan mudah dipahami", "infografis harus berisi teks yang sangat panjang", "pembaca membutuhkan waktu lebih lama", "infografis hanya dapat digunakan untuk hiburan"], a: 0, exp: "Infografis efektif untuk menyampaikan informasi secara ringkas, menarik, dan mudah dipahami." },
+            { q: "30. Salah satu tantangan utama tenaga kerja pada era Industri 4.0 adalah ....", o: ["tidak perlu belajar teknologi", "harus mampu beradaptasi dan meningkatkan keterampilan digital", "semua pekerjaan dilakukan tanpa teknologi", "teknologi tidak memengaruhi pekerjaan"], a: 1, exp: "Era Industri 4.0 menuntut tenaga kerja beradaptasi dan meningkatkan keterampilan digital." },
+            { q: "31. Pembuatan aplikasi kesehatan dapat melibatkan programmer, dokter, desainer, dan ahli data. Kolaborasi tersebut penting karena ....", o: ["semua orang harus mengerjakan pekerjaan yang sama", "setiap bidang memiliki keahlian yang dapat saling melengkapi", "programmer tidak membutuhkan ahli bidang lain", "pekerjaan akan lebih sulit"], a: 1, exp: "Kolaborasi lintas bidang menggabungkan keahlian yang berbeda agar masalah dapat diselesaikan." },
+            { q: "32. Seorang siswa belajar Informatika dengan rajin karena ingin mendapatkan hadiah dari orang tuanya. Jenis motivasi tersebut adalah ....", o: ["intrinsik", "ekstrinsik", "biologis", "spontan"], a: 1, exp: "Motivasi karena hadiah berasal dari faktor luar sehingga disebut motivasi ekstrinsik." },
+            { q: "33. Peraturan perundang-undangan di Indonesia yang mengatur informasi dan transaksi elektronik dikenal sebagai ....", o: ["UU ITE", "UU Lalu Lintas", "UU Pendidikan Dasar", "UU Perpajakan"], a: 0, exp: "UU ITE adalah peraturan yang berkaitan dengan informasi dan transaksi elektronik." },
+            { q: "34. Pembatasan penggunaan media sosial pada remaja dapat menjadi salah satu upaya untuk ....", o: ["mencegah semua remaja menggunakan teknologi", "mengurangi risiko penggunaan berlebihan dan menjaga keseimbangan aktivitas", "menghilangkan komunikasi digital", "membuat remaja tidak mengenal internet"], a: 1, exp: "Pengaturan penggunaan media sosial membantu mengurangi risiko berlebihan dan menjaga keseimbangan." },
+            { q: "35. Pernyataan: Penggunaan teknologi digital harus dilakukan secara bijak.\nAlasan: Penggunaan teknologi yang tidak bertanggung jawab dapat menimbulkan berbagai masalah, seperti penyebaran informasi yang salah dan pelanggaran privasi.\nHubungan pernyataan dan alasan tersebut adalah ....", o: ["pernyataan benar dan alasan mendukung pernyataan", "pernyataan benar tetapi alasan tidak berhubungan", "pernyataan salah tetapi alasan benar", "pernyataan dan alasan sama-sama tidak berhubungan"], a: 0, exp: "Alasan menjelaskan hubungan sebab-akibat yang secara langsung mendukung pernyataan." }
+        ];
+
+        let mcqIndex = 0;
+        let mcqCorrect = 0;
+        let hasAnsweredMCQ = false;
+
+        const headerStatus = document.getElementById('header-status');
+        const screens = {
+            start: document.getElementById('start-screen'),
+            mcq: document.getElementById('mcq-screen'),
+            result: document.getElementById('result-screen')
+        };
+
+        function switchScreen(screenName) {
+            Object.values(screens).forEach(s => {
+                s.classList.add('hidden-screen');
+                s.classList.remove('fade-in');
+            });
+            screens[screenName].classList.remove('hidden-screen');
+            void screens[screenName].offsetWidth; // trigger reflow
+            screens[screenName].classList.add('fade-in');
+            
+            if(screenName === 'mcq') headerStatus.innerText = "Pilihan Ganda";
+            if(screenName === 'result') headerStatus.innerText = "Selesai";
+        }
+
+        function startQuiz() {
+            switchScreen('mcq');
+            loadMCQ();
+        }
+
+        function loadMCQ() {
+            hasAnsweredMCQ = false;
+            document.getElementById('mcq-explanation-box').classList.add('hidden-screen');
+            document.getElementById('mcq-next-btn').classList.add('hidden-screen');
+            
+            // Memastikan area scroll kembali ke paling atas saat soal baru dimuat
+            const scrollArea = document.getElementById('mcq-scroll-area');
+            if(scrollArea) scrollArea.scrollTop = 0;
+            
+            const currentQ = mcqQuestions[mcqIndex];
+            
+            document.getElementById('mcq-counter').innerText = `Soal ${mcqIndex + 1} / ${mcqQuestions.length}`;
+            document.getElementById('mcq-progress-bar').style.width = `${((mcqIndex + 1) / mcqQuestions.length) * 100}%`;
+            document.getElementById('mcq-question-text').innerText = currentQ.q;
+            
+            const optionsContainer = document.getElementById('mcq-options-container');
+            optionsContainer.innerHTML = '';
+            const alphabet = ['A', 'B', 'C', 'D'];
+            
+            // Render Opsi sangat rapat (compact)
+            currentQ.o.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'mcq-option w-full text-left p-2 rounded-lg border border-gray-200 bg-white active:bg-gray-50 flex items-start gap-2 shadow-sm';
+                btn.innerHTML = `
+                    <span class="badge flex-shrink-0 w-6 h-6 rounded flex items-center justify-center bg-gray-100 text-gray-600 font-bold text-xs mt-0.5 border border-transparent">${alphabet[index]}</span>
+                    <span class="text-xs sm:text-sm text-gray-700 font-medium leading-snug py-0.5">${option}</span>
+                `;
+                btn.onclick = () => selectMCQ(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectMCQ(selectedIndex, selectedBtn) {
+            if (hasAnsweredMCQ) return;
+            hasAnsweredMCQ = true;
+
+            const currentQ = mcqQuestions[mcqIndex];
+            const isCorrect = selectedIndex === currentQ.a;
+            
+            if (isCorrect) {
+                mcqCorrect++;
+                document.getElementById('mcq-correct-display').innerText = mcqCorrect;
+            }
+
+            const allButtons = document.querySelectorAll('.mcq-option');
+            
+            allButtons.forEach((btn, index) => {
+                btn.disabled = true;
+                const badge = btn.querySelector('.badge');
+                const text = btn.querySelector('span:nth-child(2)');
+
+                if (index === currentQ.a) {
+                    btn.classList.replace('border-gray-200', 'border-green-500');
+                    btn.classList.add('bg-green-50');
+                    badge.classList.replace('bg-gray-100', 'bg-green-500');
+                    badge.classList.replace('text-gray-600', 'text-white');
+                } else if (index === selectedIndex && !isCorrect) {
+                    btn.classList.replace('border-gray-200', 'border-red-500');
+                    btn.classList.add('bg-red-50');
+                    badge.classList.replace('bg-gray-100', 'bg-red-500');
+                    badge.classList.replace('text-gray-600', 'text-white');
+                } else {
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            // Tampilkan penjelasan
+            const expBox = document.getElementById('mcq-explanation-box');
+            document.getElementById('mcq-explanation-text').innerHTML = `<strong>Kunci: ${['A', 'B', 'C', 'D'][currentQ.a]}</strong>. ${currentQ.exp}`;
+            expBox.classList.remove('hidden-screen');
+            
+            // Tampilkan tombol next
+            const nextBtn = document.getElementById('mcq-next-btn');
+            nextBtn.classList.remove('hidden-screen');
+            if (mcqIndex === mcqQuestions.length - 1) {
+                nextBtn.querySelector('span').innerText = "Selesaikan Evaluasi";
+            } else {
+                nextBtn.querySelector('span').innerText = "Selanjutnya";
+            }
+        }
+
+        function nextMCQ() {
+            mcqIndex++;
+            if (mcqIndex < mcqQuestions.length) {
+                loadMCQ();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            switchScreen('result');
+            
+            const finalScore = Math.round((mcqCorrect / mcqQuestions.length) * 100);
+            const wrongCount = mcqQuestions.length - mcqCorrect;
+            
+            document.getElementById('final-correct-count').innerText = mcqCorrect;
+            document.getElementById('final-wrong-count').innerText = wrongCount;
+            document.getElementById('final-score').innerText = finalScore;
+
+            setTimeout(() => {
+                const circle = document.getElementById('score-circle-path');
+                circle.style.strokeDasharray = `${finalScore}, 100`;
+                if(finalScore >= 80) circle.style.stroke = "#10b981"; 
+                else if(finalScore >= 60) circle.style.stroke = "#3b82f6"; 
+                else circle.style.stroke = "#f59e0b"; 
+            }, 100);
+            
+            const messageEl = document.getElementById('result-message');
+            const msgContainer = document.getElementById('result-message-container');
+            
+            if (finalScore >= 85) {
+                messageEl.innerText = "Luar Biasa! 🏆";
+                msgContainer.className = "w-full p-3 rounded-xl mb-auto border bg-green-50 border-green-200 text-green-700";
+            } else if (finalScore >= 70) {
+                messageEl.innerText = "Kerja Bagus! 🌟";
+                msgContainer.className = "w-full p-3 rounded-xl mb-auto border bg-blue-50 border-blue-200 text-blue-700";
+            } else {
+                messageEl.innerText = "Tetap Semangat! 💪";
+                msgContainer.className = "w-full p-3 rounded-xl mb-auto border bg-amber-50 border-amber-200 text-amber-700";
+            }
+        }
+
+        function restartQuiz() {
+            mcqIndex = 0;
+            mcqCorrect = 0;
+            document.getElementById('mcq-correct-display').innerText = 0;
+            document.getElementById('score-circle-path').style.strokeDasharray = `0, 100`;
+            
+            headerStatus.innerText = "Mulai";
+            switchScreen('start');
+        }
+    </script>
+</body>
+</html>
